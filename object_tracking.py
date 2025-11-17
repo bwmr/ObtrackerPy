@@ -118,10 +118,11 @@ def get_linkage_dict(label_props, min_distance, area_ratio, orientation_dif):
             
         
 
-def track_cells(unet_path, min_distance, area_ratio, orientation_dif):
+def track_cells(unet_path, cum_drift, min_distance, area_ratio, orientation_dif):
     
     print('reading images...')
     masked_images = load_tif_images(unet_path)
+    masked_images = apply_drift_correction(masked_images, cum_drift_x, cum_drift_y)
     
     label_props = {}
     print('collecting label statistics...')
@@ -229,4 +230,5 @@ def assemble_tracking_data(data_save_path):
         
     
     
+
     

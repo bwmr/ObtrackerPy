@@ -11,6 +11,7 @@ from skimage.measure import regionprops_table
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 
 
 
@@ -28,6 +29,11 @@ def load_tif_images(unet_path, time_string_length=4, image_suffix_str='_cp_masks
     
     return masked_images
 
+
+def load_cumulative_drifts(save_path):
+    with open(save_path+'/cumulative_drift_lists', 'rb') as handle:
+        cum_drift = pickle.load(handle)
+    return cum_drift
 
 
 def apply_drift_correction(masks_dict, cum_drift_x, cum_drift_y):
@@ -122,7 +128,7 @@ def track_cells(unet_path, cum_drift, min_distance, area_ratio, orientation_dif)
     
     print('reading images...')
     masked_images = load_tif_images(unet_path)
-    masked_images = apply_drift_correction(masked_images, cum_drift_x, cum_drift_y)
+    masked_images = apply_drift_correction(masked_images, cum_drift[0], cum_drift[1])
     
     label_props = {}
     print('collecting label statistics...')
@@ -173,10 +179,11 @@ def show_cell_trajectories(unet_path, label_df, min_trajectory_length, experimen
     
 
 
-def apply_cell_tracking(unet_path, experiment_id, min_distance=10, area_ratio=(0.95,1.1), orientation_dif=(-0.1,0.1),
+def apply_cell_tracking(unet_path, experiment_id, drift_path, min_distance=10, area_ratio=(0.95,1.1), orientation_dif=(-0.1,0.1),
                         min_trajectory_length=200, data_save_path='none', save_figure_path='none'):
-    
-    label_df = track_cells(unet_path, min_distance, area_ratio, orientation_dif)
+
+    cum_drift = load_cumulative_drifts(drift_path)
+    label_df = track_cells(unet_path, cum_drift, min_distance, area_ratio, orientation_dif)
     label_df['experiment_id'] = experiment_id[:experiment_id.find('_xy')]
     label_df['xy_position'] = int(experiment_id[experiment_id.find('_xy')+3:])
     print(label_df['experiment_id'].unique(), label_df['xy_position'].unique())
@@ -185,50 +192,4 @@ def apply_cell_tracking(unet_path, experiment_id, min_distance=10, area_ratio=(0
     if os.path.isdir(save_figure_path):
         show_cell_trajectories(unet_path, label_df, min_trajectory_length, experiment_id, save_figure_path)
     
-    
-    
-def track_multiple_xy_positions(folder_path, data_save_path):
-    
-    files = os.listdir(folder_path)
-    files = [s for s in files if '_c1' in s]
-    
-    for fl in files:
-        experiment_id = fl[:fl.find('_xy')]+fl[fl.find('_xy'):fl.find('_xy')+5]
-        xy_position = int(fl[fl.find('_xy')+3:fl.find('_c1')])
-        print(experiment_id, xy_position)
-        
-        omni_path = folder_path+'/'+fl+'/masks'
-        
-        apply_cell_tracking(omni_path, 
-                            experiment_id, 
-                            min_distance=10, 
-                            area_ratio=(0.95,1.1), 
-                            orientation_dif=(-0.1,0.1),
-                            min_trajectory_length=200, 
-                            data_save_path=data_save_path, 
-                            save_figure_path='none')
-        
-        
-
-def assemble_tracking_data(data_save_path):
-    
-    i = 0
-    
-    files = os.listdir(data_save_path)
-    for fl in files:
-        pos_df = pd.read_pickle(data_save_path+'/'+fl, compression='zip')
-        if i == 0:
-            final_df = pos_df
-            i+=1
-        else:
-            final_df = pd.concat([final_df, pos_df])
-            
-    final_df.to_pickle(data_save_path+'/'+final_df.experiment_id.unique()[0]+'_all_tracks', compression='zip')
-    
-    return final_df
-        
-        
-    
-    
-
     

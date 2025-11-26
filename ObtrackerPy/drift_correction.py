@@ -1,5 +1,5 @@
 """
-Created on Mon Nov 17 22:20:42 2025
+Created on Mon Nov 17 22:20:42 2025.
 
 @author: Alexandros Papagiannakis, HHMI @Stanford University, 2025
 """
@@ -10,6 +10,7 @@ import numpy as np
 
 
 def load_drift_statistics(drift_save_path):
+    """Get pre-computed drift statistics from UnDrift."""
     with open(drift_save_path+'/drift_statistics', 'rb') as handle:
         rect_crop, cum_drifts = pickle.load(handle)
     return rect_crop, cum_drifts
@@ -17,9 +18,11 @@ def load_drift_statistics(drift_save_path):
 
 
 def apply_drift_correction(masks_dict, cum_drift_x, cum_drift_y):
+    """Apply drift correction from UnDrift to segmentations.
 
-    # The drift is computed in the https://github.com/alexSysBio/UnDrift/blob/main/remove_image_drift.py repository
+    You can find UnDrift at github.com/alexSysBio/UnDrift.
 
+    """
     aligned = {}
 
     keys = sorted(masks_dict.keys())

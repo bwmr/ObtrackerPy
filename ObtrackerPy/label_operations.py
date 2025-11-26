@@ -1,5 +1,5 @@
 """
-Created on Mon Nov 17 22:23:29 2025
+Created on Mon Nov 17 22:23:29 2025.
 
 @author: Alexandros Papagiannakis, HHMI @Stanford University, 2025
 """
@@ -13,16 +13,21 @@ from skimage import io
 from skimage.measure import regionprops_table
 
 
-def load_tif_images(unet_path, time_string_length=4, image_suffix_str='_cp_masks'):
-
+def load_tif_images(unet_path,
+                    time_string_length=4,
+                    image_suffix_str='_cp_masks'):
+    """Parse tif (or other supported) images from folder."""
     phase_objects = os.listdir(unet_path)
     masks_paths = [s for s in phase_objects if 'cp_masks' in s]
 
     masked_images = {}
 
     for msk in masks_paths:
-        tm = msk[msk.find(image_suffix_str)-time_string_length:msk.find(image_suffix_str)]
+        tm = msk[(msk.find(image_suffix_str)-
+                  time_string_length):msk.find(image_suffix_str)]
+
         print('reading image timepoint:', tm)
+
         masked_images[int(tm)] = io.imread(unet_path+'/'+msk)
 
     return masked_images
@@ -30,16 +35,21 @@ def load_tif_images(unet_path, time_string_length=4, image_suffix_str='_cp_masks
 
 
 def get_region_properties(labeled_image):
-
+    """Get the properties of a cell over time."""
     props = regionprops_table(labeled_image,
-                              properties=('centroid', 'orientation', 'axis_major_length', 'axis_minor_length', 'area','label',))
+                              properties=('centroid',
+                                          'orientation',
+                                          'axis_major_length',
+                                          'axis_minor_length',
+                                          'area',
+                                          'label',))
 
     return pd.DataFrame(props)
 
 
 
 def get_linkage_dict(label_props, min_distance, area_ratio, orientation_dif):
-
+    """Get the lineage for each cell."""
     timepoints = np.array(list(label_props.keys())).astype(int)
 
     connect_dict = {}
@@ -51,7 +61,7 @@ def get_linkage_dict(label_props, min_distance, area_ratio, orientation_dif):
         min_df = label_props[tm]
         max_df = label_props[tm+1]
 
-        for ind, row in min_df.iterrows():
+        for _, row in min_df.iterrows():
 
             x = row['centroid-1']
             y = row['centroid-0']
@@ -59,7 +69,8 @@ def get_linkage_dict(label_props, min_distance, area_ratio, orientation_dif):
             ori = row.orientation
             cl_id = row.cell_id
 
-            max_df['sd'] = np.sqrt((max_df['centroid-1']-x)**2+(max_df['centroid-0']-y)**2)
+            max_df['sd'] = np.sqrt((max_df['centroid-1']-x)**2+
+                                   (max_df['centroid-0']-y)**2)
             max_df['ad'] = max_df.area / ar
             max_df['od'] = max_df.orientation - ori
 

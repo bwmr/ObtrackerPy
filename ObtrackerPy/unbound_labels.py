@@ -1,5 +1,5 @@
 """
-Created on Mon Nov 17 22:22:23 2025
+Created on Mon Nov 17 22:22:23 2025.
 
 @author: Alexandros Papagiannakis, HHMI @Stanford University, 2025
 """
@@ -8,7 +8,7 @@ import numpy as np
 
 
 def remove_cells_at_boundaries(image_labels):
-
+    """Remove labels that touch the boundary in given image."""
     height = image_labels.shape[0]
     width = image_labels.shape[1]
 
@@ -29,11 +29,11 @@ def remove_cells_at_boundaries(image_labels):
 
 
 def apply_boundary_removal(image_labels_dict):
-
+    """Apply boundary label removal to entire image_labels_dict."""
     unbound_labels = {}
 
     keys = sorted(image_labels_dict.keys())
-    for i, k in enumerate(keys):
+    for _, k in enumerate(keys):
         print(f'frame: {k}')
         unbound_labels[k] = remove_cells_at_boundaries(image_labels_dict[k])
     return unbound_labels

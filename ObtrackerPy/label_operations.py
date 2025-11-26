@@ -6,29 +6,38 @@ Created on Mon Nov 17 22:23:29 2025.
 
 
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from skimage import io
 from skimage.measure import regionprops_table
+from tqdm import tqdm
 
 
-def load_tif_images(unet_path,
-                    time_string_length=4,
+def load_tif_images(folder,
                     image_suffix_str='_cp_masks'):
-    """Parse tif (or other supported) images from folder."""
-    phase_objects = os.listdir(unet_path)
+    """Parse tif (or other supported) images from folder.
+
+    Expects the file name to be in SuperSegger - omnipose convention, e.g.
+    experiment_t???xy*c?_cp_masks.png
+
+    """
+    folder = Path(folder)
+
+    phase_objects = os.listdir(folder)
     masks_paths = [s for s in phase_objects if 'cp_masks' in s]
 
     masked_images = {}
 
-    for msk in masks_paths:
-        tm = msk[(msk.find(image_suffix_str)-
-                  time_string_length):msk.find(image_suffix_str)]
+    for msk in tqdm(masks_paths):
 
-        print('reading image timepoint:', tm)
+        # Timepoint is between t and xy
+        tm = msk[msk.find('_t')+2:msk.find('xy')]
 
-        masked_images[int(tm)] = io.imread(unet_path+'/'+msk)
+        #print('reading image timepoint:', tm)
+
+        masked_images[int(tm)] = io.imread(folder / msk)
 
     return masked_images
 
@@ -48,7 +57,7 @@ def get_region_properties(labeled_image):
 
 
 
-def get_linkage_dict(label_props, min_distance, area_ratio, orientation_dif):
+def get_linkage_dict(label_props, search_radius, area_ratio, orientation_dif):
     """Get the lineage for each cell."""
     timepoints = np.array(list(label_props.keys())).astype(int)
 
@@ -56,7 +65,7 @@ def get_linkage_dict(label_props, min_distance, area_ratio, orientation_dif):
     lineage_dict = {}
     tr = 0
 
-    for tm in range(np.min(timepoints), np.max(timepoints)):
+    for tm in tqdm(range(np.min(timepoints), np.max(timepoints))):
 
         min_df = label_props[tm]
         max_df = label_props[tm+1]
@@ -74,7 +83,7 @@ def get_linkage_dict(label_props, min_distance, area_ratio, orientation_dif):
             max_df['ad'] = max_df.area / ar
             max_df['od'] = max_df.orientation - ori
 
-            cls_df = max_df[(max_df.sd<min_distance)&
+            cls_df = max_df[(max_df.sd<search_radius)&
                             (max_df.ad.between(*area_ratio))&
                             (max_df.od.between(*orientation_dif))]
             if cls_df.shape[0]==1:

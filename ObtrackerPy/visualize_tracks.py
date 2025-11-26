@@ -18,8 +18,7 @@ def show_cell_trajectories(label_df, min_trajectory_length):
     plt.figure(figsize=(3,3))
     for traj in red_df.traj_id.unique():
         traj_df = red_df[red_df.traj_id==traj]
-        if traj_df.frame.min() == 0:
-            plt.plot(traj_df.frame, traj_df.area, color='gray', linewidth=0.5)
+        plt.plot(traj_df.frame, traj_df.area, color='gray',linewidth = 0.5)
     plt.xlabel('Time (frame)')
     plt.ylabel('Object area (px)')
     plt.yscale('log')

@@ -18,6 +18,7 @@ dependencies = [
     "scikit-image",
     "pandas",
     "matplotlib",
+    "tqdm",
 ]
 
 [tool.setuptools]
